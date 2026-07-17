@@ -1,0 +1,7 @@
+# Core dependencies
+pyodbc>=5.1.0
+boto3
+tzdata; sys_platform == 'win32'
+
+# Optional: Airflow integration (only needed if running as a DAG)
+# apache-airflow>=3.0.0,<4.0.0

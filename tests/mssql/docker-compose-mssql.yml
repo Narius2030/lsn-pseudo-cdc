@@ -1,0 +1,12 @@
+services:
+  sql2014:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mssql2014_sp1
+    ports:
+      - "1433:1433"
+    environment:
+      - sa_password=YourStrongPassword123!
+      - ACCEPT_EULA=Y
+    restart: always
