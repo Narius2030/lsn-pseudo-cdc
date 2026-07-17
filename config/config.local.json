@@ -9,7 +9,7 @@
   },
   "s3": {
     "bucket": "datalake-raw",
-    "data_prefix": "comc-sakila-cdc/sakila2021",
+    "data_prefix": "comc-sakila-cdc/sakila",
     "region_name": "us-east-1",
     "endpoint_url": "http://localhost:9000",
     "profile_name": null,
@@ -22,7 +22,7 @@
   "state_store": {
     "type": "s3",
     "bucket": "datalake-raw",
-    "key": "comc-sakila-cdc/sakila2021/database=sakila2021/state/bookmarks.json"
+    "key": "comc-sakila-cdc/sakila/database=sakila/state/bookmarks.json"
   },
   "runtime": {
     "server_name": "SAKILA_MASTER",
