@@ -49,5 +49,4 @@ RUN pip install --no-cache-dir .
 # --------------------------------------------------
 # Entrypoint
 # --------------------------------------------------
-ENTRYPOINT ["pseudo-cdc-connectors"]
-CMD ["--config-dir", "/configs"]
+ENTRYPOINT ["sqlserver-cdc-s3"]
