@@ -60,8 +60,9 @@ sqlserver-cdc-s3 --config config/config.json
 
 ```bash
 cp config/config.local.example.json config/config.local.json
-sqlserver-cdc-s3 --config config/config.local.json --preflight-only
-sqlserver-cdc-s3 --config config/config.local.json --output-mode local --no-commit-bookmarks
+sqlserver-cdc-s3 --config config/config.example.json --preflight-only                               # check connections only
+sqlserver-cdc-s3 --config config/config.example.json --output-mode local (--no-commit-bookmarks)    # run and store data at local machine
+sqlserver-cdc-s3 --config config/config.example.json (--no-commit-bookmarks)                        # run and store data on s3
 ```
 
 With `output_mode=local`, CDC files are written under `runtime.local_output_dir`; no S3 configuration is required.

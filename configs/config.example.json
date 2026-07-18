@@ -1,0 +1,58 @@
+{
+  "sqlserver": {
+    "connection_string": "DRIVER={<ODBC_DRIVER>};SERVER=<SQLSERVER_HOST>,<SQLSERVER_PORT>;DATABASE=<DATABASE_NAME>;UID=<DATABASE_USERNAME>;PWD=<DATABASE_PASSWORD>;Encrypt=<ENCRYPT_ENABLED>;TrustServerCertificate=<TRUST_SERVER_CERTIFICATE>;ApplicationIntent=<APPLICATION_INTENT>",
+    "login_timeout_seconds": 15,
+    "query_timeout_seconds": 120,
+    "fetch_size": 500,
+    "lsn_window_size": 1000,
+    "lock_timeout_ms": 3000
+  },
+  "s3": {
+    "bucket": "<S3_BUCKET_NAME>",
+    "data_prefix": "<S3_DATA_PREFIX>",
+    "region_name": "<AWS_REGION>",
+    "endpoint_url": "<S3_ENDPOINT_URL>",
+    "profile_name": "<AWS_PROFILE_NAME_OR_NULL>",
+    "access_key_id": "<AWS_ACCESS_KEY_ID>",
+    "secret_access_key": "<AWS_SECRET_ACCESS_KEY>",
+    "session_token": "<AWS_SESSION_TOKEN_OR_NULL>",
+    "server_side_encryption": "<S3_ENCRYPTION_TYPE_OR_NULL>",
+    "ssekms_key_id": "<KMS_KEY_ID_OR_NULL>"
+  },
+  "state_store": {
+    "type": "s3",
+    "bucket": "<STATE_STORE_BUCKET_NAME>",
+    "key": "<STATE_STORE_OBJECT_KEY>"
+  },
+  "runtime": {
+    "server_name": "<SOURCE_SERVER_NAME>",
+    "topic_prefix": "<TOPIC_PREFIX>",
+    "source_timezone": "<SOURCE_TIMEZONE>",
+    "local_work_dir": "<LOCAL_WORK_DIRECTORY>",
+    "output_mode": "<OUTPUT_MODE>",
+    "local_output_dir": "<LOCAL_OUTPUT_DIRECTORY>",
+    "enable_compression": false,
+    "partition_by_date": true,
+    "snapshot_mode": "initial",
+    "commit_bookmarks": true,
+    "validate_destination_on_startup": true,
+    "enforce_sqlserver_2014_sp1": false,
+    "allow_best_effort_without_command_id": true,
+    "inspect_cdc_health": true,
+    "fail_on_cdc_engine_errors": true,
+    "emit_tombstone_on_delete": false,
+    "include_schemas": true,
+    "cleanup_failed_runs": true,
+    "fail_on_lsn_gap": true,
+    "fail_on_incomplete_update_pair": true,
+    "min_lsn_window_size": 100,
+    "window_size_reduction_factor": 2,
+    "max_retries": 3,
+    "retry_backoff_seconds": 2.0,
+    "retry_max_delay_seconds": 30.0
+  },
+  "logging": {
+    "level": "INFO",
+    "file_path": "<LOG_FILE_PATH>"
+  }
+}

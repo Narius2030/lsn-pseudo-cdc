@@ -36,13 +36,15 @@ class DebeziumEnvelopeBuilder:
     ) -> dict[str, Any]:
         # User requested a flattened format with specific metadata fields prefixed with __
         record = after if after is not None else (before or {})
-        
+
         # Add requested metadata
         record["__op"] = op
         record["__table"] = self.capture_instance.source_table
         record["__deleted"] = "true" if op == "d" else "false"
-        record["__source_ts_ms"] = self._to_epoch(commit_time, "ms") if commit_time else self._to_epoch(processed_at, "ms")
-        
+        record["__source_ts_ms"] = (
+            self._to_epoch(commit_time, "ms") if commit_time else self._to_epoch(processed_at, "ms")
+        )
+
         return record
 
     def build_tombstone(self, row_state: dict[str, Any] | None) -> dict[str, Any]:

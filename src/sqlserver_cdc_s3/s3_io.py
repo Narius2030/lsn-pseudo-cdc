@@ -69,7 +69,7 @@ class S3ArtifactWriter(ArtifactWriter):
         }
         if key.lower().endswith(".gz"):
             extra_args["ContentEncoding"] = "gzip"
-            
+
         if self.config.server_side_encryption:
             extra_args["ServerSideEncryption"] = self.config.server_side_encryption
         if self.config.ssekms_key_id:

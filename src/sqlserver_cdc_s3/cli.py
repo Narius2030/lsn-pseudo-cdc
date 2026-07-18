@@ -12,7 +12,11 @@ from .pipeline import run_pipeline
 def main() -> int:
     parser = argparse.ArgumentParser(description="Export SQL Server CDC changes to S3 in Debezium-style JSON format.")
     parser.add_argument("--config", required=True, help="Path to the JSON configuration file.")
-    parser.add_argument("--preflight-only", action="store_true", help="Validate SQL Server, CDC health, and destination access without extracting data.")
+    parser.add_argument(
+        "--preflight-only",
+        action="store_true",
+        help="Validate SQL Server, CDC health, and destination access without extracting data.",
+    )
     parser.add_argument(
         "--output-mode",
         choices=["s3", "local"],

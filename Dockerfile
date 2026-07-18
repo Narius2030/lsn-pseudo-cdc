@@ -42,12 +42,11 @@ WORKDIR /app
 # --------------------------------------------------
 # Install the packaged application
 # --------------------------------------------------
-COPY pyproject.toml requirements.txt ./
+COPY pyproject.toml ./
 COPY src/ ./src/
 RUN pip install --no-cache-dir .
 
 # --------------------------------------------------
 # Entrypoint
 # --------------------------------------------------
-ENTRYPOINT ["pseudo-cdc-connectors"]
-CMD ["--config-dir", "/configs"]
+ENTRYPOINT ["sqlserver-cdc-s3"]

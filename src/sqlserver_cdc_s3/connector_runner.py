@@ -29,10 +29,7 @@ def discover_connectors(config_dir: str | Path) -> list[ConnectorDefinition]:
     if not paths:
         raise ConfigurationError(f"No JSON connector configurations found in: {directory}")
 
-    connectors = [
-        ConnectorDefinition(connector_id=path.stem, path=path, config=load_config(path))
-        for path in paths
-    ]
+    connectors = [ConnectorDefinition(connector_id=path.stem, path=path, config=load_config(path)) for path in paths]
     _validate_connector_isolation(connectors)
     return connectors
 
