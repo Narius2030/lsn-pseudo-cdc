@@ -1,0 +1,71 @@
+name: CD
+
+on:
+  repository_dispatch:
+    types: [release-created]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref (tag/branch/SHA) to build & deploy; empty uses main HEAD
+        required: false
+        default: ''
+      version:
+        description: Version label for the image (optional)
+        required: false
+        default: ''
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+permissions:
+  contents: read
+
+jobs:
+  # Resolve the exact commit + version to build. For a release this is the SHA
+  # the tag was created at (from release.yml), so CD builds precisely the tagged
+  # commit rather than whatever happens to be on main HEAD at dispatch time.
+  prepare:
+    name: Resolve build context
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      ref: ${{ steps.ctx.outputs.ref }}
+      version: ${{ steps.ctx.outputs.version }}
+    steps:
+      - id: ctx
+        env:
+          DISPATCH_SHA: ${{ github.event.client_payload.sha }}
+          DISPATCH_VERSION: ${{ github.event.client_payload.version }}
+          INPUT_REF: ${{ github.event.inputs.ref }}
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          ref="${DISPATCH_SHA:-$INPUT_REF}"
+          version="${DISPATCH_VERSION:-$INPUT_VERSION}"
+          echo "ref=${ref}" >>"$GITHUB_OUTPUT"
+          echo "version=${version}" >>"$GITHUB_OUTPUT"
+          echo "Building ref='${ref:-<main HEAD>}' version='${version:-<none>}'"
+
+  quality:
+    name: Quality gate
+    needs: prepare
+    uses: ./.github/workflows/reusable-python-ci.yml
+    with:
+      ref: ${{ needs.prepare.outputs.ref }}
+
+  build-push:
+    name: Build, scan, sign & push
+    needs: [prepare, quality]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/reusable-docker.yml
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+      ref: ${{ needs.prepare.outputs.ref }}

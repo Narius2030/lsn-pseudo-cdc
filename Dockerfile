@@ -42,7 +42,7 @@ WORKDIR /app
 # --------------------------------------------------
 # Install the packaged application
 # --------------------------------------------------
-COPY pyproject.toml requirements.txt ./
+COPY pyproject.toml ./
 COPY src/ ./src/
 RUN pip install --no-cache-dir .
 
