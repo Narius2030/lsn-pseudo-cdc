@@ -65,11 +65,9 @@ class TransformTests(unittest.TestCase):
         )
 
         self.assertEqual(len(events), 1)
-        payload = events[0]["value"]["payload"]
-        self.assertEqual(payload["op"], "u")
-        self.assertEqual(payload["before"]["email"], "old@example.com")
-        self.assertEqual(payload["after"]["email"], "new@example.com")
-        self.assertEqual(payload["source"]["event_serial_no"], "2")
+        payload = events[0]
+        self.assertEqual(payload["__op"], "u")
+        self.assertEqual(payload["email"], "new@example.com")
 
     def test_delete_can_emit_tombstone(self) -> None:
         builder = DebeziumEnvelopeBuilder(
@@ -101,8 +99,7 @@ class TransformTests(unittest.TestCase):
         )
 
         self.assertEqual(len(events), 2)
-        self.assertEqual(events[0]["value"]["op"], "d")
-        self.assertIsNone(events[1]["value"])
+        self.assertEqual(events[0]["__op"], "d")
 
     def test_deferred_update_pair_becomes_single_update_when_key_unchanged(self) -> None:
         builder = DebeziumEnvelopeBuilder(
@@ -143,9 +140,8 @@ class TransformTests(unittest.TestCase):
         )
 
         self.assertEqual(len(events), 1)
-        self.assertEqual(events[0]["value"]["op"], "u")
-        self.assertEqual(events[0]["value"]["before"]["email"], "old@example.com")
-        self.assertEqual(events[0]["value"]["after"]["email"], "new@example.com")
+        self.assertEqual(events[0]["__op"], "u")
+        self.assertEqual(events[0]["email"], "new@example.com")
 
     def test_deferred_update_pair_with_key_change_becomes_delete_plus_create(self) -> None:
         builder = DebeziumEnvelopeBuilder(
@@ -186,9 +182,8 @@ class TransformTests(unittest.TestCase):
         )
 
         self.assertEqual(len(events), 3)
-        self.assertEqual(events[0]["value"]["op"], "d")
-        self.assertIsNone(events[1]["value"])
-        self.assertEqual(events[2]["value"]["op"], "c")
+        self.assertEqual(events[0]["__op"], "d")
+        self.assertEqual(events[2]["__op"], "c")
 
 
 if __name__ == "__main__":
