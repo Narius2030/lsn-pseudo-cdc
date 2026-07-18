@@ -175,9 +175,7 @@ def run_pipeline(
         reader.close()
 
 
-def _filter_capture_instances(
-    capture_instances: list[CaptureInstance], config: AppConfig
-) -> list[CaptureInstance]:
+def _filter_capture_instances(capture_instances: list[CaptureInstance], config: AppConfig) -> list[CaptureInstance]:
     """Apply the connector's optional capture-instance allow/deny lists."""
     include = set(config.runtime.include_capture_instances)
     exclude = set(config.runtime.exclude_capture_instances)
@@ -187,8 +185,7 @@ def _filter_capture_instances(
     selected = [
         item
         for item in capture_instances
-        if (not include or item.capture_instance in include)
-        and item.capture_instance not in exclude
+        if (not include or item.capture_instance in include) and item.capture_instance not in exclude
     ]
     configured_names = include | exclude
     available_names = {item.capture_instance for item in capture_instances}
@@ -321,7 +318,7 @@ def _perform_snapshot(
     logger: logging.LoggerAdapter,
 ) -> None:
     logger.info("Performing full snapshot for %s.", capture_instance.qualified_table)
-    
+
     builder = DebeziumEnvelopeBuilder(
         capture_instance=capture_instance,
         topic_prefix=config.runtime.topic_prefix,
@@ -342,7 +339,7 @@ def _perform_snapshot(
             temp_file_path = Path(handle.name)
 
         record_count = 0
-        
+
         def _open_temp():
             if config.runtime.enable_compression:
                 return gzip.open(temp_file_path, mode="wt", encoding="utf-8")
@@ -390,15 +387,17 @@ def _perform_snapshot(
             artifact_writer.describe_destination(s3_key),
         )
 
-        summary.files.append(WindowResult(
-            capture_instance=capture_instance.capture_instance,
-            source_schema=capture_instance.source_schema,
-            source_table=capture_instance.source_table,
-            from_lsn="snapshot",
-            to_lsn="snapshot",
-            records_written=record_count,
-            s3_key=s3_key,
-        ))
+        summary.files.append(
+            WindowResult(
+                capture_instance=capture_instance.capture_instance,
+                source_schema=capture_instance.source_schema,
+                source_table=capture_instance.source_table,
+                from_lsn="snapshot",
+                to_lsn="snapshot",
+                records_written=record_count,
+                s3_key=s3_key,
+            )
+        )
         summary.total_records += record_count
         uploaded_keys.append(s3_key)
 
@@ -572,7 +571,7 @@ def _extract_single_window(
             temp_file_path = Path(handle.name)
 
         record_count = 0
-        
+
         def _open_temp():
             if config.runtime.enable_compression:
                 return gzip.open(temp_file_path, mode="wt", encoding="utf-8")
@@ -776,14 +775,16 @@ def _snapshot_key(
     table_folder = f"{config.runtime.topic_prefix}.{database_name}.{capture_instance.source_schema}.{capture_instance.source_table}"
     extension = ".json.gz" if config.runtime.enable_compression else ".json"
     parts = [config.s3.data_prefix, table_folder]
-    
+
     if config.runtime.partition_by_date:
-        parts.extend([
-            f"year={started_at.strftime('%Y')}",
-            f"month={started_at.strftime('%m')}",
-            f"day={started_at.strftime('%d')}"
-        ])
-    
+        parts.extend(
+            [
+                f"year={started_at.strftime('%Y')}",
+                f"month={started_at.strftime('%m')}",
+                f"day={started_at.strftime('%d')}",
+            ]
+        )
+
     filename = f"snapshot_{run_id}{extension}"
     parts.append(filename)
     return _join_key_prefix(*parts)
@@ -800,21 +801,23 @@ def _window_key(
 ) -> str:
     # table folder syntax: topic_prefix.database.schema.tablename
     table_folder = f"{config.runtime.topic_prefix}.{database_name}.{capture_instance.source_schema}.{capture_instance.source_table}"
-    
+
     extension = ".json.gz" if config.runtime.enable_compression else ".json"
     parts = [config.s3.data_prefix, table_folder]
-    
+
     if config.runtime.partition_by_date:
-        parts.extend([
-            f"year={started_at.strftime('%Y')}",
-            f"month={started_at.strftime('%m')}",
-            f"day={started_at.strftime('%d')}"
-        ])
-    
+        parts.extend(
+            [
+                f"year={started_at.strftime('%Y')}",
+                f"month={started_at.strftime('%m')}",
+                f"day={started_at.strftime('%d')}",
+            ]
+        )
+
     # Filename includes LSN range and run_id for uniqueness
     filename = f"{lsn_bytes_to_hex(from_lsn)}_{lsn_bytes_to_hex(to_lsn)}_{run_id}{extension}"
     parts.append(filename)
-    
+
     return _join_key_prefix(*parts)
 
 

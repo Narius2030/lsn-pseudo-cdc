@@ -13,9 +13,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Run SQL Server CDC connector configurations from a directory.")
     parser.add_argument("--config-dir", required=True, help="Directory containing one JSON file per connector.")
     parser.add_argument("--continue-on-error", action="store_true", help="Run remaining connectors after a failure.")
-    parser.add_argument("--preflight-only", action="store_true", help="Validate each connector without extracting data.")
-    parser.add_argument("--output-mode", choices=["s3", "local"], help="Override runtime.output_mode for every connector.")
-    parser.add_argument("--no-commit-bookmarks", action="store_true", help="Do not persist bookmarks for any connector.")
+    parser.add_argument(
+        "--preflight-only", action="store_true", help="Validate each connector without extracting data."
+    )
+    parser.add_argument(
+        "--output-mode", choices=["s3", "local"], help="Override runtime.output_mode for every connector."
+    )
+    parser.add_argument(
+        "--no-commit-bookmarks", action="store_true", help="Do not persist bookmarks for any connector."
+    )
     args = parser.parse_args()
 
     try:

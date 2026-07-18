@@ -213,8 +213,7 @@ class SQLServerCDCReader:
         source_table_name = self._quote_identifier(capture_instance.source_table)
         source_schema_name = self._quote_identifier(capture_instance.source_schema)
         captured_column_list = ",\n            ".join(
-            self._quote_identifier(column.column_name)
-            for column in capture_instance.columns
+            self._quote_identifier(column.column_name) for column in capture_instance.columns
         )
 
         query = f"""
@@ -248,8 +247,7 @@ class SQLServerCDCReader:
     ) -> Generator[list[dict[str, Any]], None, None]:
         change_table_name = self._quote_identifier(f"{capture_instance.capture_instance}_CT")
         captured_column_list = ",\n            ".join(
-            f"ct.{self._quote_identifier(column.column_name)}"
-            for column in capture_instance.columns
+            f"ct.{self._quote_identifier(column.column_name)}" for column in capture_instance.columns
         )
         command_id_select = (
             "ct.__$command_id AS __$command_id,"
