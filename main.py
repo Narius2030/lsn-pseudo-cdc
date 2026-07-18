@@ -2,12 +2,11 @@ import os
 import sys
 import json
 from pathlib import Path
+from sqlserver_cdc_s3.pipeline import run_pipeline
 
 # Add src to path so we can import sqlserver_cdc_s3 without installing the package
 current_dir = Path(__file__).parent
 sys.path.append(str(current_dir / "src"))
-
-from sqlserver_cdc_s3.pipeline import run_pipeline
 
 def test_local_mode():
     """
@@ -40,10 +39,10 @@ def test_local_mode():
         print("Example: export SQLSERVER_HOST=localhost")
         print("-------------------------------------")
 
-    print(f"Starting CDC Extraction...")
+    print("Starting CDC Extraction...")
     print(f"Config: {config_path}")
-    print(f"Output Mode: local (writing to local-output/)")
-    print(f"Bookmark Commit: disabled (dry-run mode)")
+    print("Output Mode: local (writing to local-output/)")
+    print("Bookmark Commit: disabled (dry-run mode)")
     print("-" * 40)
 
     try:
@@ -60,7 +59,7 @@ def test_local_mode():
         print("-----------------------------------")
         
     except Exception as e:
-        print(f"\n[ERROR] Pipeline failed during execution:")
+        print("\n[ERROR] Pipeline failed during execution:")
         print(f"Type: {type(e).__name__}")
         print(f"Message: {str(e)}")
         sys.exit(1)
