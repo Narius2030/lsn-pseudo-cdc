@@ -8,6 +8,7 @@ from sqlserver_cdc_s3.pipeline import run_pipeline
 current_dir = Path(__file__).parent
 sys.path.append(str(current_dir / "src"))
 
+
 def test_local_mode():
     """
     Test script for running the CDC pipeline in local mode.
@@ -31,7 +32,7 @@ def test_local_mode():
     # These are only needed if your config uses the ${VAR} syntax
     required_env = ["SQLSERVER_HOST", "SQLSERVER_DATABASE", "SQLSERVER_USER", "SQLSERVER_PASSWORD"]
     missing = [env for env in required_env if env not in os.environ]
-    
+
     if missing:
         print("--- Environment Variables Missing ---")
         print(f"The following variables are required by your config: {', '.join(missing)}")
@@ -48,21 +49,19 @@ def test_local_mode():
     try:
         # We override some settings here to ensure it's a safe local test
         result = run_pipeline(
-            str(config_path),
-            preflight_only=False,
-            output_mode_override=None,
-            commit_bookmarks_override=True
+            str(config_path), preflight_only=False, output_mode_override=None, commit_bookmarks_override=True
         )
-        
+
         print("\n--- Pipeline Execution Summary ---")
         print(json.dumps(result, indent=2))
         print("-----------------------------------")
-        
+
     except Exception as e:
         print("\n[ERROR] Pipeline failed during execution:")
         print(f"Type: {type(e).__name__}")
         print(f"Message: {str(e)}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     test_local_mode()
