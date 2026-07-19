@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.2.1](https://github.com/Narius2030/lsn-pseudo-cdc/compare/v0.2.0...v0.2.1) (2026-07-19)
+
+
+### Bug Fixes
+
+* updated changelog-section in release-please configure ([7ce124d](https://github.com/Narius2030/lsn-pseudo-cdc/commit/7ce124dc8992d9bf6511fd163fe3328c2258c783))
+* updated changelog-section in release-please configure ([a03db53](https://github.com/Narius2030/lsn-pseudo-cdc/commit/a03db532cc0615d1e56a09d34c1c7d313457f990))
+
+
+### Configuration
+
+* **ci/cd:** update ci event trigger on pr & push ([915d03a](https://github.com/Narius2030/lsn-pseudo-cdc/commit/915d03aa6d9c47ed55edad7f0ae7be2f40ee2e78))
+* **ci/cd:** update pr_title types in ci pipeline ([776631d](https://github.com/Narius2030/lsn-pseudo-cdc/commit/776631d0eb910095dc9ee174c3e766595ce9c091))
+* **docs:** update readme document about installation for local running ([7cb86a5](https://github.com/Narius2030/lsn-pseudo-cdc/commit/7cb86a59536b2498293a7e24e9ecf51061d35674))
+
 ## [0.2.0](https://github.com/Narius2030/lsn-pseudo-cdc/compare/v0.1.0...v0.2.0) (2026-07-18)
 
 
