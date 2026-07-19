@@ -1,113 +1,250 @@
 # SQL Server CDC to S3
 
-This program reads all CDC changes from CDC-enabled SQL Server tables, converts them to Debezium-style JSON, and stores them in S3 as individual compressed `json.gz` files.
+`sqlserver-cdc-s3` exports changes from SQL Server CDC-enabled tables as Debezium-style JSON events. It reads each capture instance's CDC change table, writes JSON artifacts (optionally gzip-compressed), and stores them in Amazon S3 or a local directory.
 
-## Highlights
+The extractor is specialized for SQL Server 2014 SP1 CDC behavior. It reads `cdc.<capture_instance>_CT` directly so that, where available, `__$command_id` can be used to preserve change ordering.
 
-- Automatically discovers every CDC-enabled `capture_instance` in the database.
-- Optimized specifically for SQL Server 2014 SP1 instead of assuming the same CDC behavior as newer versions.
-- Reads `cdc.<capture_instance>_CT` directly to retain SQL Server 2014 SP1-specific metadata.
-- When the change table includes `__$command_id`, uses it to preserve the correct order as recommended by Microsoft.
-- Fails early by default when SQL Server 2014 SP1 is older than `CU10` (`12.0.4491.0`, released `2016-12-19`) or lacks `__$command_id`.
-- Includes a local test mode that writes files to a local directory instead of uploading to S3.
-- Supports the default `boto3` AWS credential chain and optional `profile_name`, `access_key_id`, `secret_access_key`, and `session_token` configuration.
-- Fixes `max_lsn` for the entire run to maintain consistency.
-- Splits extraction into LSN windows to avoid timeouts and reduce OOM risk.
-- Automatically shrinks the LSN window and retries after timeouts or transport errors while reading CDC.
-- Streams data directly to a local gzip file before uploading it to S3.
-- Updates bookmarks only after the entire run succeeds.
-- Performs a best-effort S3 rollback if a run fails.
-- Includes a sample Airflow 3.x DAG using `airflow.sdk`.
+## Features
 
-The provided source code is a custom, highly specialized CDC extractor for SQL Server 2014 SP1. It is designed to overcome the limitations of older SQL Server versions while producing output that is compatible with modern data ecosystems (specifically Debezium).
+- Discovers CDC capture instances automatically, with optional include and exclude lists.
+- Emits Debezium-style `before`, `after`, and `source` envelopes for inserts, updates, and deletes.
+- Processes bounded LSN windows and shrinks/retries a window after retryable SQL errors.
+- Keeps the run's maximum LSN fixed, so a run has a consistent upper bound.
+- Supports `.json.gz` compression and S3 or local output.
+- Persists bookmarks only after a successful run; performs a best-effort S3 cleanup after a failed run.
+- Validates SQL Server build, CDC metadata, CDC health, and destination access during preflight.
+- Includes commands for one connector and for a directory of independent connector configurations.
 
-Here is how it works in detail:
+## Requirements
 
-    1. CDC Change Reading Mechanism: Unlike newer SQL Server versions, which provide robust stored procedures for reading CDC changes, SQL Server 2014 SP1 has known issues with event ordering and LSN (Log Sequence Number) management. This code uses direct queries:
-    * Direct Change Table Access: The SQLServerCDCReader queries the internal CDC change tables (e.g., cdc.schema_table_CT) directly. This is done to access the __$command_id column, which is critical for maintaining correct transaction order in SQL Server 2014 SP1 (fixed in CU10).
-    * Adaptive LSN Windowing: Instead of reading all changes at once (which could cause OOM or timeouts), the pipeline.py uses "LSN Windows." It reads a fixed number of LSNs at a time. If the SQL Server becomes slow or the result set is too large, the system automatically shrinks the window size and retries.
-    * Version Validation: On startup, it inspects the SQL Server build number. It specifically checks for CU10 (build 12.0.4491.0) to ensure __$command_id is available. If the server is older, it can either fail or proceed in a "best-effort" mode depending on configuration.
-    * Stateful Bookmarking: It tracks progress using the __$start_lsn. These bookmarks are stored externally (in a local file or S3), ensuring that the extractor picks up exactly where it left off in the next run.
+- Python 3.10 or later.
+- An ODBC driver usable by `pyodbc`. On Linux, install [Microsoft ODBC Driver 18 for SQL Server](https://learn.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server).
+- Network access and credentials for the SQL Server database.
+- CDC enabled for the database and the tables to export.
+- AWS credentials and S3 access when using S3 output or an S3 bookmark store. Credentials can come from the standard boto3 credential chain, an AWS profile, or the `s3` configuration section.
 
-    2. Debezium-Style JSON Transformation: Although the source is SQL Server 2014, the output is transformed into a modern Debezium JSON envelope.
-    * Envelope Construction: The DebeziumEnvelopeBuilder in debezium.py maps raw SQL rows (Delete=1, Insert=2, UpdateBefore=3, UpdateAfter=4) into Debezium operations (d, c, u).
-    * Payload Structure: It generates a JSON object with before, after, and source blocks. The source block includes metadata like change_lsn, commit_lsn, and the table name, mimicking a real Debezium connector.
-    * Data Type Mapping: SQL types (Decimal, DateTime, Binary) are converted into JSON-safe formats (strings, ISO timestamps, Base64).
+For SQL Server 2014 SP1, use CU10 (`12.0.4491.0`) or later to get `__$command_id`. The application can be configured to stop if that column is absent, or to continue in best-effort mode.
 
-    3. S3 Sink Functionality: The application acts as a scheduled sink connector, often triggered by Airflow:
-    * Streaming Upload: As it reads records from SQL Server, it streams them into a local gzip file.
-    * S3 Upload: Once a window is complete, it uploads the .json.gz file to S3 using boto3. It applies appropriate metadata (ContentType, ContentEncoding) and supports encryption (SSE-S3 or SSE-KMS).
-    * Manifest & Rollback: At the end of a successful run, it writes a manifest.json file. If the process fails halfway, it performs a "best-effort" rollback by deleting the uploaded files from S3 to prevent partial data ingestion in downstream systems.
+## Installation
 
-## Project structure
-
-- `config/config.example.json`: example configuration file.
-- `src/sqlserver_cdc_s3/`: main Python package.
-- `dags/cdc_sqlserver_to_s3_dag.py`: sample Airflow DAG.
-- `tests/`: unit tests for LSN handling and transformations.
-
-## Run locally
+### 1. Clone the repository
 
 ```bash
-python -m venv .venv
+git clone https://github.com/Narius2030/lsn-pseudo-cdc.git
+cd lsn-pseudo-cdc
+```
+
+### 2. Create and activate a virtual environment
+
+macOS/Linux:
+
+```bash
+python3 -m venv .venv
 source .venv/bin/activate
-pip install -e .
-cp config/config.example.json config/config.json
-sqlserver-cdc-s3 --config config/config.json
 ```
 
-## Test locally before deploying to Airflow
+Windows PowerShell:
+
+```powershell
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+### 3. Install the application
+
+For normal use:
 
 ```bash
-cp config/config.local.example.json config/config.local.json
-sqlserver-cdc-s3 --config config/config.example.json --preflight-only                               # check connections only
-sqlserver-cdc-s3 --config config/config.example.json --output-mode local (--no-commit-bookmarks)    # run and store data at local machine
-sqlserver-cdc-s3 --config config/config.example.json (--no-commit-bookmarks)                        # run and store data on s3
+python -m pip install --upgrade pip
+python -m pip install .
 ```
 
-With `output_mode=local`, CDC files are written under `runtime.local_output_dir`; no S3 configuration is required.
-
-## Run multiple connectors in Docker
-
-The Docker image runs every JSON connector configuration in `/configs`, ordered by filename. Mount the configuration directory as read-only. Each connector needs its own state store and output destination to prevent bookmarks or artifacts from being overwritten.
+For local development, including Ruff:
 
 ```bash
-docker run --rm \
-  --env-file connectors/production.env \
-  -v "$PWD/connectors:/configs:ro" \
-  pseudo-cdc:latest
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
 ```
 
-Each file in `connectors/` is a standard configuration. For example, `connectors/crm-orders.json` reads only the desired capture instances:
+Airflow is optional. Install it only if you intend to use the sample DAG:
+
+```bash
+python -m pip install -e ".[airflow]"
+```
+
+## Configuration
+
+Start from the provided template:
+
+```bash
+cp configs/config.example.json configs/config.json
+```
+
+Edit `configs/config.json` and replace every placeholder. Do not commit credentials or the resulting local configuration file.
+
+The top-level sections are:
+
+| Section | Purpose |
+| --- | --- |
+| `sqlserver` | ODBC connection string, timeouts, fetch size, and LSN window size. |
+| `s3` | Output bucket/prefix, AWS credentials or profile, endpoint, and encryption settings. |
+| `state_store` | Bookmark storage, either `file` or `s3`. |
+| `runtime` | Output mode, directories, capture-instance filtering, snapshots, retries, and safety checks. |
+| `logging` | Log level and optional log file path. |
+
+### Local, non-destructive trial
+
+For a first run, use local output and a file bookmark. This avoids S3 uploads and makes the exported files easy to inspect. Set these values in your configuration:
 
 ```json
 {
-  "runtime": {
-    "server_name": "CRM",
-    "include_capture_instances": ["dbo_Orders", "dbo_OrderLines"]
-  },
   "state_store": {
-    "type": "s3",
-    "bucket": "cdc-state",
-    "key": "connectors/crm-orders/bookmarks.json"
+    "type": "file",
+    "path": "runtime/bookmarks.json"
+  },
+  "runtime": {
+    "output_mode": "local",
+    "local_work_dir": "runtime/work",
+    "local_output_dir": "runtime/output",
+    "commit_bookmarks": false
   }
 }
 ```
 
-`runtime.include_capture_instances` is an optional allowlist. If it is empty, the connector reads every capture instance in the database. `runtime.exclude_capture_instances` is an optional denylist. If one connector fails, the runner stops and returns exit code 1. Use `--continue-on-error` to continue with the remaining connectors; it still returns exit code 1 if any connector fails.
+Keep the other required settings from the template, especially `sqlserver.connection_string`, `runtime.server_name`, `runtime.topic_prefix`, and `runtime.source_timezone`. When `output_mode` is `local`, S3 output settings are not used; an S3 state store still requires S3 settings and credentials.
+
+`runtime.include_capture_instances` may contain an allowlist, and `runtime.exclude_capture_instances` may contain a denylist. An empty allowlist means all discovered capture instances are eligible.
+
+## Usage
+
+### 1. Verify configuration and connectivity
+
+Preflight checks SQL Server connectivity, CDC metadata and health, and (when applicable) destination access without extracting changes:
 
 ```bash
-docker run --rm -v "$PWD/connectors:/configs:ro" pseudo-cdc:latest --continue-on-error
+sqlserver-cdc-s3 --config configs/config.json --preflight-only
+```
+
+### 2. Run locally without saving bookmarks
+
+This is the safest extraction command for validation. It forces local output and prevents bookmark commits, regardless of the values in the configuration file:
+
+```bash
+sqlserver-cdc-s3 \
+  --config configs/config.json \
+  --output-mode local \
+  --no-commit-bookmarks
+```
+
+Inspect files under `runtime.local_output_dir`. A successful command prints a JSON summary to standard output.
+
+### 3. Run with the configured output and bookmark behavior
+
+After validation, run the connector with the configuration's `runtime.output_mode` and `runtime.commit_bookmarks` settings:
+
+```bash
+sqlserver-cdc-s3 --config configs/config.json
+```
+
+To run against S3 but deliberately leave bookmark state unchanged, add `--no-commit-bookmarks`:
+
+```bash
+sqlserver-cdc-s3 --config configs/config.json --no-commit-bookmarks
+```
+
+### Run multiple connectors
+
+Place one JSON configuration per connector in a directory. Connector files are loaded in filename order. Each must use a distinct bookmark location and output destination.
+
+```bash
+pseudo-cdc-connectors --config-dir connectors --preflight-only
+pseudo-cdc-connectors --config-dir connectors
+```
+
+Use `--continue-on-error` to run remaining connectors after one fails; the process still exits with status 1 when any connector fails. The multi-connector command also supports `--output-mode local` and `--no-commit-bookmarks`.
+
+## Docker
+
+Build an image with the SQL Server ODBC driver included:
+
+```bash
+docker build -t pseudo-cdc:latest .
+```
+
+Run one connector by mounting its configuration:
+
+```bash
+docker run --rm \
+  --env-file connectors/production.env \
+  -v "$PWD/configs:/configs:ro" \
+  pseudo-cdc:latest --config /configs/config.json
+```
+
+The image entrypoint is `sqlserver-cdc-s3`. For multiple connectors, override the entrypoint:
+
+```bash
+docker run --rm \
+  -v "$PWD/connectors:/configs:ro" \
+  --entrypoint pseudo-cdc-connectors \
+  pseudo-cdc:latest --config-dir /configs
+```
+
+## Development checks
+
+Run these commands from the repository root after installing `.[dev]`.
+
+### Run the test suite
+
+The tests use Python's standard-library `unittest` runner:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+Run one test module while iterating:
+
+```bash
+python -m unittest tests.test_transform -v
+```
+
+### Run Ruff
+
+Check lint rules:
+
+```bash
+ruff check .
+```
+
+Apply Ruff's safe automatic fixes, then review the changes:
+
+```bash
+ruff check . --fix
+```
+
+Check formatting without changing files:
+
+```bash
+ruff format . --check
+```
+
+Format files:
+
+```bash
+ruff format .
+```
+
+Before opening a pull request, run:
+
+```bash
+python -m unittest discover -s tests -v
+ruff check .
+ruff format . --check
 ```
 
 ## Operational notes
 
-- Bookmarks are stored separately; neither source tables nor CDC change tables are modified.
-- The program performs only `SELECT` statements, CDC metadata-reading functions, and session-level `SET` statements. It performs no `INSERT`, `UPDATE`, `DELETE`, or DDL, and does not modify SQL Server source data.
-- SQL Server 2014 SP1 has an important distinction: Microsoft states that `__$seqval` should not be used to order a change table, and `__$command_id` was added only after hotfix `KB3030352` in SQL Server 2014 SP1 `CU10`.
-- For `SQL Server 2014 SP1 CU13`, Microsoft's build list reports `12.0.4520.0`, but package `KB4019099` often appears as version `12.0.4522.0`; the program recognizes both as `CU13`.
-- Before extraction, the program runs preflight checks for the SQL Server build, the presence of `__$command_id`, and CDC health DMVs (`sys.dm_cdc_log_scan_sessions`, `sys.dm_cdc_errors`).
-- If the S3 environment does not allow `HeadBucket`, set `runtime.validate_destination_on_startup=false` to defer validation until the actual upload.
-- If a cleanup job has removed data and a bookmark is older than the current `min_lsn`, the program fails explicitly by default.
-- If a batch file fails during upload or transformation, its bookmark is not committed.
-- S3 data is considered complete only after the manifest file at `.../manifests/<run_id>.json` is successfully written.
+- The extractor does not write to SQL Server source tables or CDC change tables. It uses reads and session-level settings only.
+- Bookmarks advance only after the complete run succeeds. If a stored bookmark is older than the current CDC `min_lsn`, the run fails by default rather than silently skipping data.
+- S3 output is complete only after its manifest is written under `manifests/<run_id>.json` beneath the configured data prefix.
+- If startup bucket validation is not permitted by your S3 policy, set `runtime.validate_destination_on_startup` to `false`; the upload itself will still require the necessary permissions.
+- Set `runtime.allow_best_effort_without_command_id` to `false` to require `__$command_id` and fail on older SQL Server 2014 SP1 environments.
