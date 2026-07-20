@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.2](https://github.com/Narius2030/lsn-pseudo-cdc/compare/v0.2.1...v0.2.2) (2026-07-20)
+
+
+### Documentation
+
+* created markdown documents for sqlserver-to-s3 cdc architecture and ci/cd pipeline ([dcce64b](https://github.com/Narius2030/lsn-pseudo-cdc/commit/dcce64bd6c2f9fc9872bb74bf370465ce45a0808))
+* created markdown documents for sqlserver-to-s3 cdc architecture… ([bf90f39](https://github.com/Narius2030/lsn-pseudo-cdc/commit/bf90f39676320a10690413a40c83cfdb19a27aef))
+
 ## [0.2.1](https://github.com/Narius2030/lsn-pseudo-cdc/compare/v0.2.0...v0.2.1) (2026-07-19)
 
 
