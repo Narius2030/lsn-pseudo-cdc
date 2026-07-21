@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.5](https://github.com/Narius2030/lsn-pseudo-cdc/compare/v0.2.4...v0.2.5) (2026-07-21)
+
+
+### Bug Fixes
+
+* **cd:** install cosign package in deploy-production step in cd ([9faeef6](https://github.com/Narius2030/lsn-pseudo-cdc/commit/9faeef634570a52836658a41cef4386708cb50e1))
+* **cd:** install cosign package in deploy-production step in cd ([d433a8d](https://github.com/Narius2030/lsn-pseudo-cdc/commit/d433a8d0cb70fe865ca377b4c69567f40a27108d))
+
 ## [0.2.4](https://github.com/Narius2030/lsn-pseudo-cdc/compare/v0.2.3...v0.2.4) (2026-07-21)
 
 
