@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sqlserver-cdc-s3"
-version = "0.2.2"
+version = "0.2.3"
 description = "Read SQL Server CDC change tables and persist Debezium-style JSON events to S3."
 requires-python = ">=3.10"
 dependencies = [
