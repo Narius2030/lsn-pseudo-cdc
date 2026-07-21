@@ -4,3 +4,4 @@ __pycache__/
 src/sqlserver_cdc_s3.egg-info/
 specs/
 config.sakila.json
+actions-runner/
