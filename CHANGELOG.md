@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/Narius2030/lsn-pseudo-cdc/compare/v0.2.2...v0.2.3) (2026-07-21)
+
+
+### Documentation
+
+* updated readme file ([de2f307](https://github.com/Narius2030/lsn-pseudo-cdc/commit/de2f307d90516a71c8adfcbf8a744fede438ff27))
+
 ## [0.2.2](https://github.com/Narius2030/lsn-pseudo-cdc/compare/v0.2.1...v0.2.2) (2026-07-20)
 
 
