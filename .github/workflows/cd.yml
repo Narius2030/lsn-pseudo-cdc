@@ -38,7 +38,9 @@ jobs:
           DISPATCH_IMAGE: ${{ github.event.client_payload.image }}
           DISPATCH_VERSION: ${{ github.event.client_payload.version }}
           INPUT_VERSION: ${{ github.event.inputs.version }}
-        run: bash ./.github/scripts/cd/prepare.sh
+        run: |
+          chmod +x ./.github/scripts/cd/*.sh
+          bash ./.github/scripts/cd/prepare.sh
 
   # This job only downloads a verified image into the Docker cache on the
   # target server. It deliberately does not create, restart, or remove any
@@ -68,4 +70,6 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COSIGN_CERT_IDENTITY_REGEXP: '^${{ github.server_url }}/${{ github.repository }}/.github/workflows/.+@.+$'
           COSIGN_CERT_OIDC_ISSUER: https://token.actions.githubusercontent.com
-        run: bash ./.github/scripts/cd/pull-image.sh
+        run: |
+          chmod +x ./.github/scripts/cd/*.sh
+          bash ./.github/scripts/cd/pull-image.sh
