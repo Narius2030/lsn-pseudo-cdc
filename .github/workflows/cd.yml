@@ -5,14 +5,10 @@ on:
     types: [release-created]
   workflow_dispatch:
     inputs:
-      ref:
-        description: Git ref (tag/branch/SHA) to build & deploy; empty uses main HEAD
-        required: false
-        default: ''
       version:
-        description: Version label for the image (optional)
-        required: false
-        default: ''
+        description: Published image version to pull (for example, 1.2.3)
+        required: true
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -24,48 +20,52 @@ env:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
-  # Resolve the exact commit + version to build. For a release this is the SHA
-  # the tag was created at (from release.yml), so CD builds precisely the tagged
-  # commit rather than whatever happens to be on main HEAD at dispatch time.
   prepare:
-    name: Resolve build context
+    name: Resolve requested image
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      ref: ${{ steps.ctx.outputs.ref }}
-      version: ${{ steps.ctx.outputs.version }}
+      image: ${{ steps.request.outputs.image }}
+      version: ${{ steps.request.outputs.version }}
     steps:
-      - id: ctx
+      - uses: actions/checkout@v4
+
+      - id: request
         env:
-          DISPATCH_SHA: ${{ github.event.client_payload.sha }}
+          DISPATCH_IMAGE: ${{ github.event.client_payload.image }}
           DISPATCH_VERSION: ${{ github.event.client_payload.version }}
-          INPUT_REF: ${{ github.event.inputs.ref }}
           INPUT_VERSION: ${{ github.event.inputs.version }}
-        run: |
-          ref="${DISPATCH_SHA:-$INPUT_REF}"
-          version="${DISPATCH_VERSION:-$INPUT_VERSION}"
-          echo "ref=${ref}" >>"$GITHUB_OUTPUT"
-          echo "version=${version}" >>"$GITHUB_OUTPUT"
-          echo "Building ref='${ref:-<main HEAD>}' version='${version:-<none>}'"
+        run: bash ./.github/scripts/cd/prepare.sh
 
-  quality:
-    name: Quality gate
+  # This job only downloads a verified image into the Docker cache on the
+  # target server. It deliberately does not create, restart, or remove any
+  # containers; the server-owned runtime controls those operations.
+  deploy-production:
+    name: Pull image to production
     needs: prepare
-    uses: ./.github/workflows/reusable-python-ci.yml
-    with:
-      ref: ${{ needs.prepare.outputs.ref }}
-
-  build-push:
-    name: Build, scan, sign & push
-    needs: [prepare, quality]
+    runs-on: ${{ fromJSON(vars.DEPLOY_RUNS_ON_STAGING || '["self-hosted"]') }}
+    timeout-minutes: 15
+    environment: production
     permissions:
       contents: read
-      packages: write
-      id-token: write
-      attestations: write
-    uses: ./.github/workflows/reusable-docker.yml
-    with:
-      version: ${{ needs.prepare.outputs.version }}
-      ref: ${{ needs.prepare.outputs.ref }}
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify deployment tools
+        run: |
+          docker version
+          cosign version
+
+      - name: Pull requested image by digest
+        env:
+          REQUESTED_IMAGE: ${{ needs.prepare.outputs.image }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COSIGN_CERT_IDENTITY_REGEXP: '^${{ github.server_url }}/${{ github.repository }}/.github/workflows/.+@.+$'
+          COSIGN_CERT_OIDC_ISSUER: https://token.actions.githubusercontent.com
+        run: bash ./.github/scripts/cd/pull-image.sh
