@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.4](https://github.com/Narius2030/lsn-pseudo-cdc/compare/v0.2.3...v0.2.4) (2026-07-21)
+
+
+### Bug Fixes
+
+* **cd:** grant permission to execute shell scripts in cd.yml ([749d8c1](https://github.com/Narius2030/lsn-pseudo-cdc/commit/749d8c11f6082990a90a1093f29ef27f5c3cbde0))
+* **cd:** grant permission to execute shell scripts in cd.yml ([56ed5db](https://github.com/Narius2030/lsn-pseudo-cdc/commit/56ed5dbb07043fe7b98c6396c699cd62c693c14f))
+* **cd:** updated cd and release-please pipelines to self-hosted runner ([4bd0f3f](https://github.com/Narius2030/lsn-pseudo-cdc/commit/4bd0f3fa89ba85e703d9f6739b08d35b051d2491))
+* **cd:** updated cd and release-please pipelines to self-hosted runner ([5e20b4e](https://github.com/Narius2030/lsn-pseudo-cdc/commit/5e20b4ec01beaf166da5e1599cffff13dd99a3ed))
+
 ## [0.2.3](https://github.com/Narius2030/lsn-pseudo-cdc/compare/v0.2.2...v0.2.3) (2026-07-21)
 
 
