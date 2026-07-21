@@ -27,49 +27,15 @@ For SQL Server 2014 SP1, use CU10 (`12.0.4491.0`) or later to get `__$command_id
 
 ## Installation
 
-### 1. Clone the repository
+Pull image by version tag or cosign label
 
 ```bash
-git clone https://github.com/Narius2030/lsn-pseudo-cdc.git
-cd lsn-pseudo-cdc
-```
-
-### 2. Create and activate a virtual environment
-
-macOS/Linux:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-Windows PowerShell:
-
-```powershell
-py -m venv .venv
-.venv\Scripts\Activate.ps1
-```
-
-### 3. Install the application
-
-For normal use:
-
-```bash
-python -m pip install --upgrade pip
-python -m pip install .
-```
-
-For local development, including Ruff:
-
-```bash
-python -m pip install --upgrade pip
-python -m pip install -e ".[dev]"
-```
-
-Airflow is optional. Install it only if you intend to use the sample DAG:
-
-```bash
-python -m pip install -e ".[airflow]"
+# version
+docker pull ghcr.io/narius2030/lsn-pseudo-cdc:latest
+# commit
+docker pull ghcr.io/narius2030/lsn-pseudo-cdc:sha-841f775
+# immuatable digest
+docker pull ghcr.io/narius2030/lsn-pseudo-cdc:sha256-6e77b20dddf19ef084bd5b38848af758c067c82c8a0facac5ee9001397c63b65
 ```
 
 ## Configuration
@@ -138,58 +104,13 @@ sqlserver-cdc-s3 \
 
 Inspect files under `runtime.local_output_dir`. A successful command prints a JSON summary to standard output.
 
-### 3. Run with the configured output and bookmark behavior
-
-After validation, run the connector with the configuration's `runtime.output_mode` and `runtime.commit_bookmarks` settings:
+## Docker Run
 
 ```bash
-sqlserver-cdc-s3 --config configs/config.json
+docker run --rm --network local_dev -v "$PWD/configs:/configs:ro,Z" ghcr.io/narius2030/lsn-pseudo-cdc:latest --config /configs/config.local.json
 ```
 
-To run against S3 but deliberately leave bookmark state unchanged, add `--no-commit-bookmarks`:
-
-```bash
-sqlserver-cdc-s3 --config configs/config.json --no-commit-bookmarks
-```
-
-### Run multiple connectors
-
-Place one JSON configuration per connector in a directory. Connector files are loaded in filename order. Each must use a distinct bookmark location and output destination.
-
-```bash
-pseudo-cdc-connectors --config-dir connectors --preflight-only
-pseudo-cdc-connectors --config-dir connectors
-```
-
-Use `--continue-on-error` to run remaining connectors after one fails; the process still exits with status 1 when any connector fails. The multi-connector command also supports `--output-mode local` and `--no-commit-bookmarks`.
-
-## Docker
-
-Build an image with the SQL Server ODBC driver included:
-
-```bash
-docker build -t pseudo-cdc:latest .
-```
-
-Run one connector by mounting its configuration:
-
-```bash
-docker run --rm \
-  --env-file connectors/production.env \
-  -v "$PWD/configs:/configs:ro" \
-  pseudo-cdc:latest --config /configs/config.json
-```
-
-The image entrypoint is `sqlserver-cdc-s3`. For multiple connectors, override the entrypoint:
-
-```bash
-docker run --rm \
-  -v "$PWD/connectors:/configs:ro" \
-  --entrypoint pseudo-cdc-connectors \
-  pseudo-cdc:latest --config-dir /configs
-```
-
-## Development checks
+## Local Development
 
 Run these commands from the repository root after installing `.[dev]`.
 
